@@ -285,6 +285,8 @@ interface DomToSvgOptions {
 | Z-index / stacking contexts | Full (CSS 2.2 paint order) |
 | **Elements** | |
 | Inline SVGs | Full (deep clone with ID namespacing) |
+| CSS-styled SVG | Full (computed fill, stroke, dash, font and anchoring inlined as attributes) |
+| SVG `<text>` | Full (outlined to `<path>` with `textToPath`, anchoring and baseline resolved by the browser) |
 | `<img>` elements | Full (inlined as data URLs, border-radius clipping) |
 | `<canvas>` elements | Full (via `toDataURL()`) |
 | Form elements | Full (`<input>`, `<select>`, `<textarea>` with multiline) |
@@ -313,6 +315,7 @@ src/
 ├── renderers/
 │   ├── html-element.ts   # HTML → SVG (backgrounds, borders, overflow, pseudo)
 │   ├── svg-element.ts    # SVG cloning with ID namespacing
+│   ├── svg-presentation.ts # Computed CSS → SVG presentation attributes
 │   └── text-node.ts      # Text → <text> or <path>
 ├── assets/
 │   ├── images.ts         # Image/canvas → data URL inlining
