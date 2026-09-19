@@ -51,7 +51,7 @@ export async function walkElement(
   // SVG element — clone directly
   if (isSvgElement(element) && element !== rootElement) {
     const box = getRelativeBox(element, rootElement);
-    const clone = renderSvgElement(element, ctx);
+    const clone = await renderSvgElement(element, ctx);
 
     // Position the cloned SVG at its computed location
     if (element.tagName.toLowerCase() === "svg") {
