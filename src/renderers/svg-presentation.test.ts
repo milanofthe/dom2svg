@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { collectSvgPresentationAttributes, isTextContentElement } from "./svg-presentation.js";
+import { paintsStrokeFirst } from "./svg-element.js";
 
 /** Computed style stand-in: SVG initial values, overridden per test */
 function mockStyles(overrides: Record<string, string> = {}) {
@@ -144,5 +145,19 @@ describe("isTextContentElement", () => {
     expect(isTextContentElement("tspan")).toBe(true);
     expect(isTextContentElement("textPath")).toBe(true);
     expect(isTextContentElement("path")).toBe(false);
+  });
+});
+
+describe("paintsStrokeFirst", () => {
+  it("detects a stroke painted below the fill", () => {
+    expect(paintsStrokeFirst({ stroke: "white", "paint-order": "stroke" })).toBe(true);
+    expect(paintsStrokeFirst({ stroke: "white", "paint-order": "markers stroke fill" })).toBe(true);
+  });
+
+  it("rejects the default order and unstroked text", () => {
+    expect(paintsStrokeFirst({ stroke: "white", "paint-order": "normal" })).toBe(false);
+    expect(paintsStrokeFirst({ stroke: "white", "paint-order": "fill stroke" })).toBe(false);
+    expect(paintsStrokeFirst({ "paint-order": "stroke" })).toBe(false);
+    expect(paintsStrokeFirst({ stroke: "none", "paint-order": "stroke" })).toBe(false);
   });
 });

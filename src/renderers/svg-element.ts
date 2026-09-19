@@ -263,21 +263,71 @@ async function textElementToPath(
   const pathData = textToPath(font, text, origin.x, origin.y, fontSize);
   if (!pathData) return null;
 
-  const path = ctx.svgDocument.createElementNS(SVG_NS, "path") as SVGElement;
-  path.setAttribute("d", pathData);
-  path.setAttribute("fill", styles.fill || "rgb(0, 0, 0)");
-
   const presentation = collectSvgPresentationAttributes(styles, node.localName);
+  const paint: Record<string, string> = { fill: styles.fill || "rgb(0, 0, 0)" };
   for (const name of TEXT_PAINT_ATTRIBUTES) {
     const value = presentation[name];
-    if (value) path.setAttribute(name, value);
+    if (value) paint[name] = value;
   }
+
+  const outlined = paintsStrokeFirst(paint)
+    ? haloedGlyphPaths(pathData, paint, ctx)
+    : glyphPath(pathData, paint, ctx);
 
   // The transform establishes the coordinate system the origin was measured in
   const transform = node.getAttribute("transform");
-  if (transform) path.setAttribute("transform", transform);
+  if (transform) outlined.setAttribute("transform", transform);
 
+  return outlined;
+}
+
+/** True when the halo stroke belongs behind the glyphs (`paint-order: stroke`) */
+export function paintsStrokeFirst(paint: Record<string, string>): boolean {
+  const order = paint["paint-order"];
+  if (!order || !paint.stroke || paint.stroke === "none") return false;
+  return /^(markers\s+)?stroke\b/.test(order);
+}
+
+/** A single <path> carrying the glyph outlines and all paint properties */
+function glyphPath(
+  pathData: string,
+  paint: Record<string, string>,
+  ctx: RenderContext,
+): SVGElement {
+  const path = ctx.svgDocument.createElementNS(SVG_NS, "path") as SVGElement;
+  path.setAttribute("d", pathData);
+  for (const [name, value] of Object.entries(paint)) {
+    path.setAttribute(name, value);
+  }
   return path;
+}
+
+/**
+ * Split a halo into two paths: the stroke below, the fill on top.
+ *
+ * `paint-order` is an SVG 2 property that PDF converters and older renderers
+ * ignore, which would paint the halo over the glyphs. Two stacked paths give
+ * the same result everywhere.
+ */
+function haloedGlyphPaths(
+  pathData: string,
+  paint: Record<string, string>,
+  ctx: RenderContext,
+): SVGElement {
+  const halo: Record<string, string> = { fill: "none" };
+  const glyphs: Record<string, string> = {};
+
+  for (const [name, value] of Object.entries(paint)) {
+    if (name === "paint-order") continue;
+    if (name.startsWith("stroke")) halo[name] = value;
+    else glyphs[name] = value;
+  }
+  if (paint.visibility) halo.visibility = paint.visibility;
+
+  const group = ctx.svgDocument.createElementNS(SVG_NS, "g") as SVGElement;
+  group.appendChild(glyphPath(pathData, halo, ctx));
+  group.appendChild(glyphPath(pathData, glyphs, ctx));
+  return group;
 }
 
 /** Rewrite all id attributes and url(#id) references in the cloned tree */
