@@ -251,15 +251,10 @@ async function textElementToPath(
   const font = await ctx.fontCache.getFont(fontFamily, styles.fontWeight, styles.fontStyle);
   if (!font) return null;
 
-  let origin: { x: number; y: number };
-  try {
-    const position = node.getStartPositionOfChar(0);
-    origin = { x: position.x, y: position.y };
-  } catch {
-    return null;
-  }
-
   const fontSize = parseFloat(styles.fontSize) || 16;
+  const origin = glyphOrigin(node, font, fontSize);
+  if (!origin) return null;
+
   const pathData = textToPath(font, text, origin.x, origin.y, fontSize);
   if (!pathData) return null;
 
@@ -279,6 +274,34 @@ async function textElementToPath(
   if (transform) outlined.setAttribute("transform", transform);
 
   return outlined;
+}
+
+/**
+ * Where the first glyph of a live <text> element sits, in its own user space.
+ *
+ * The horizontal position comes from `getStartPositionOfChar`, which resolves
+ * `x` and `text-anchor`. Its vertical position, however, reports the `y`
+ * attribute untouched, so a `dominant-baseline` shift would be lost. The
+ * rendered box does carry the shift: its top edge is the ascender of the line,
+ * so adding the font ascent back gives the alphabetic baseline the glyph
+ * outlines are drawn from.
+ */
+function glyphOrigin(
+  node: SVGTextElement,
+  font: any,
+  fontSize: number,
+): { x: number; y: number } | null {
+  const unitsPerEm = font?.unitsPerEm;
+  const ascender = font?.ascender;
+  if (!unitsPerEm || typeof ascender !== "number") return null;
+
+  try {
+    const start = node.getStartPositionOfChar(0);
+    const box = node.getBBox();
+    return { x: start.x, y: box.y + (ascender / unitsPerEm) * fontSize };
+  } catch {
+    return null;
+  }
 }
 
 /** True when the halo stroke belongs behind the glyphs (`paint-order: stroke`) */
