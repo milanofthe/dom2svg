@@ -12,6 +12,25 @@ export function isTextNode(node: Node): node is Text {
   return node.nodeType === Node.TEXT_NODE;
 }
 
+/** Check if an element is a `<details>` that is not open */
+export function isClosedDetails(element: Element): boolean {
+  return element.tagName.toLowerCase() === "details" && !element.hasAttribute("open");
+}
+
+/**
+ * The child of a closed `<details>` that the browser still shows: its first `<summary>` child.
+ * Everything else in it (other elements and bare text) is hidden by the browser's own rule on the
+ * details' content, not by `display: none`, so its computed styles still read as visible and
+ * only the structure says it is hidden. `null` when there is no `<summary>` child (the browser then
+ * shows a default one that is not in the DOM).
+ */
+export function closedDetailsShownChild(element: Element): Element | null {
+  for (const child of Array.from(element.children)) {
+    if (child.tagName.toLowerCase() === "summary") return child;
+  }
+  return null;
+}
+
 /** Check if an element is an SVG element */
 export function isSvgElement(element: Element): element is SVGElement {
   return element.namespaceURI === SVG_NS;

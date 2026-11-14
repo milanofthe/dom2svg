@@ -1,5 +1,15 @@
 import type { BorderSide, Borders, BorderRadii } from "../types.js";
 
+/**
+ * The glyph standing for a `<summary>`'s disclosure marker (`list-style-type: disclosure-closed`
+ * or `disclosure-open`), or `null` for any other list style.
+ */
+export function disclosureMarker(listStyleType: string): string | null {
+  if (listStyleType === "disclosure-closed") return "\u25B8"; // ▸
+  if (listStyleType === "disclosure-open") return "\u25BE"; // ▾
+  return null;
+}
+
 /** Check if an element's entire subtree should be skipped (display:none) */
 export function isInvisible(styles: CSSStyleDeclaration): boolean {
   return styles.display === "none";

@@ -19,6 +19,7 @@ import {
   parseBackgroundColor,
   hasBackgroundImage,
   isVisibilityHidden,
+  disclosureMarker,
 } from "../core/styles.js";
 import { parseLinearGradient, createSvgLinearGradient, rasterizeGradient } from "../assets/gradients.js";
 import { imageToDataUrl, extractUrlFromCss, canvasToDataUrl } from "../assets/images.js";
@@ -549,12 +550,19 @@ function renderListMarker(
     // ::marker pseudo-element not supported in this browser
   }
 
+  // A <summary>'s triangle is drawn inside its box, before the title, not hanging to its left
+  let inside = false;
+
   // Fallback: generate marker from listStyleType
   if (!markerText) {
     const listStyleType = styles.listStyleType;
     if (listStyleType === "none") return;
 
-    if (listStyleType === "disc") {
+    const disclosure = disclosureMarker(listStyleType);
+    if (disclosure) {
+      markerText = disclosure;
+      inside = true;
+    } else if (listStyleType === "disc") {
       markerText = "\u2022"; // •
     } else if (listStyleType === "circle") {
       markerText = "\u25CB"; // ○
@@ -583,7 +591,7 @@ function renderListMarker(
   const lineHeight = parseFloat(styles.lineHeight) || fontSize * 1.2;
 
   // Marker sits to the left of the content box, vertically aligned with the first line
-  const markerX = box.x + paddingLeft - 6;
+  const markerX = inside ? box.x + paddingLeft : box.x + paddingLeft - 6;
   const markerY = box.y + paddingTop + (lineHeight - fontSize) / 2 + fontSize * 0.8;
 
   const textEl = createSvgElement(ctx.svgDocument, "text");
@@ -593,7 +601,7 @@ function renderListMarker(
     "font-family": styles.fontFamily,
     "font-size": styles.fontSize,
     fill: styles.color,
-    "text-anchor": "end",
+    "text-anchor": inside ? "start" : "end",
   });
   textEl.textContent = markerText;
   group.appendChild(textEl);
