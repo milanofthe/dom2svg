@@ -3,6 +3,8 @@ import {
   isElement,
   isTextNode,
   isSvgElement,
+  isClosedDetails,
+  closedDetailsShownChild,
 } from "../utils/dom.js";
 import {
   isInvisible,
@@ -88,7 +90,13 @@ export async function walkElement(
   }
 
   // Walk children in CSS paint order (z-index / stacking context aware)
-  const sortedChildren = sortChildrenByPaintOrder(element);
+  let sortedChildren = sortChildrenByPaintOrder(element);
+  // A closed <details> shows only its <summary>: the rest is hidden by the browser without
+  // display:none, so it would be exported as visible.
+  if (isClosedDetails(element)) {
+    const shown = closedDetailsShownChild(element);
+    sortedChildren = sortedChildren.filter((child) => child === shown);
+  }
   for (const child of sortedChildren) {
     if (isTextNode(child)) {
       const textSvg = await renderTextNode(child, rootElement, ctx);

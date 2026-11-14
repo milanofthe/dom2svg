@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   isInvisible,
   isVisibilityHidden,
+  disclosureMarker,
   parseBorders,
   parseBorderRadii,
   hasBorder,
@@ -469,5 +470,21 @@ describe("clampRadii", () => {
     };
     const result = clampRadii(radii, 50, 50);
     expect(result).toBe(radii);
+  });
+});
+
+describe("disclosureMarker", () => {
+  it("draws a right-pointing triangle for a closed summary", () => {
+    expect(disclosureMarker("disclosure-closed")).toBe("\u25B8");
+  });
+
+  it("draws a down-pointing triangle for an open summary", () => {
+    expect(disclosureMarker("disclosure-open")).toBe("\u25BE");
+  });
+
+  it("is null for the ordinary list styles", () => {
+    expect(disclosureMarker("disc")).toBeNull();
+    expect(disclosureMarker("decimal")).toBeNull();
+    expect(disclosureMarker("none")).toBeNull();
   });
 });
